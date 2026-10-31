@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deckel-App – Weihnachtskegeln</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="firebase-config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wood:#1d1510; --wood2:#2a1e16; --cream:#f5ecd7; --cream2:#ebdfc2;
+  --ink:#24306c; --brass:#e0ac4a; --red:#b8352d; --pine:#2f5d47;
+  --text:#f6efe2; --muted:#c7b9a3; --line:rgba(255,255,255,.12);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+html{background:#1d1510}
+body{
+  font-family:Inter,system-ui,sans-serif;color:var(--text);min-height:100vh;
+  background:
+    repeating-linear-gradient(92deg,rgba(255,255,255,.018) 0 2px,transparent 2px 9px),
+    repeating-linear-gradient(88deg,rgba(0,0,0,.18) 0 1px,transparent 1px 23px),
+    radial-gradient(ellipse at top,#3a281c 0%,var(--wood) 65%);
+  background-attachment:fixed;
+}
+button{font:inherit;cursor:pointer}
+input{font:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px 80px}
+
+/* Header */
+header.top{padding:22px 0 10px;text-align:center}
+.kicker{font-family:Oswald;letter-spacing:.32em;font-size:12px;color:var(--brass);text-transform:uppercase}
+h1{font-family:Oswald;font-weight:700;font-size:clamp(30px,6vw,48px);margin:4px 0 2px;letter-spacing:.02em}
+h1 span{color:var(--brass)}
+.sub{color:var(--muted);font-size:14px}
+.stats{display:flex;justify-content:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
+.stat{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:12px;padding:8px 14px;min-width:110px}
+.stat b{display:block;font-family:Oswald;font-size:22px;font-weight:600}
+.stat small{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+
+/* Item bar */
+.bar{position:sticky;top:0;z-index:20;margin:0 -16px 18px;padding:12px 16px 12px;
+  background:linear-gradient(180deg,rgba(29,21,16,.97),rgba(29,21,16,.9));backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line)}
+.bar .who{font-size:13px;color:var(--muted);margin-bottom:8px;min-height:18px}
+.bar .who b{color:var(--brass);font-weight:600}
+.items{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:72px;
+  border:1px solid rgba(224,172,74,.45);background:linear-gradient(180deg,#3b2a1c,#2b1f15);color:var(--text);
+  border-radius:14px;padding:10px 6px;text-align:center;transition:transform .08s,background .2s,opacity .2s}
+.item .ic{font-size:22px;line-height:1}
+.item .nm{font-weight:600;font-size:15px;line-height:1.2;word-break:break-word}
+.item .pr{font-family:Oswald;color:var(--brass);font-size:22px;font-weight:600;line-height:1}
+.item:active{transform:scale(.95)}
+.items.off .item{opacity:.45}
+.item:hover{background:linear-gradient(180deg,#4a3422,#33251a)}
+
+/* Coasters */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+.deckel{position:relative;text-align:left;border:0;padding:18px 18px 16px;border-radius:26px;color:#2b2218;
+  background:
+    radial-gradient(circle at 30% 20%,rgba(255,255,255,.55),transparent 60%),
+    repeating-radial-gradient(circle at 50% 50%,rgba(120,90,50,.035) 0 2px,transparent 2px 5px),
+    var(--cream);
+  box-shadow:0 10px 24px rgba(0,0,0,.45),inset 0 0 0 1px rgba(0,0,0,.08);
+  min-height:200px;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
+.deckel::before{content:"";position:absolute;inset:8px;border-radius:20px;border:2px dashed rgba(184,53,45,.35);pointer-events:none}
+.deckel:hover{transform:translateY(-2px) rotate(-.4deg)}
+.deckel.sel{transform:translateY(-4px);box-shadow:0 0 0 4px var(--brass),0 16px 32px rgba(0,0,0,.55)}
+.deckel.sel .flag{display:block}
+.flag{display:none;position:absolute;top:-10px;right:18px;background:var(--brass);color:#2b1f15;font-family:Oswald;
+  font-size:11px;letter-spacing:.14em;padding:3px 9px;border-radius:6px;text-transform:uppercase}
+.deckel .brand{font-family:Oswald;font-size:10px;letter-spacing:.3em;color:var(--red);text-transform:uppercase;text-align:center}
+.deckel .name{font-family:Oswald;font-weight:700;font-size:26px;text-align:center;margin:2px 0 10px;color:#1f1a14;word-break:break-word}
+.lines{flex:1;display:flex;flex-direction:column;gap:4px}
+.ln{display:flex;align-items:center;gap:8px;font-family:Caveat;font-size:21px;color:var(--ink);line-height:1.05}
+.ln .lbl{min-width:74px;font-weight:700}
+.ln svg{flex:0 1 auto;overflow:visible}
+.ln .cnt{margin-left:auto;font-size:18px;opacity:.75}
+.empty{font-family:Caveat;font-size:20px;color:rgba(36,48,108,.45);text-align:center;margin:auto 0}
+.sum{margin-top:10px;border-top:1.5px solid rgba(43,34,24,.25);padding-top:8px;display:flex;align-items:baseline;justify-content:space-between}
+.sum small{font-family:Oswald;font-size:11px;letter-spacing:.2em;color:#6a5a45;text-transform:uppercase}
+.sum b{font-family:Caveat;font-size:32px;color:var(--ink);font-weight:700}
+.stamp{position:absolute;top:56px;right:10px;transform:rotate(-14deg);border:3px solid var(--pine);color:var(--pine);
+  font-family:Oswald;font-weight:700;letter-spacing:.14em;padding:2px 8px;border-radius:6px;font-size:15px;opacity:.85;background:rgba(245,236,215,.6)}
+.open{font-family:Oswald;font-size:12px;color:var(--red);text-align:right;margin-top:2px}
+.deckel.bump{animation:bump .35s}
+@keyframes bump{40%{transform:translateY(-6px) scale(1.03)}}
+
+.add{border:2px dashed rgba(224,172,74,.5);background:rgba(0,0,0,.18);color:var(--brass);border-radius:26px;min-height:200px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px}
+.add .plus{font-size:54px;line-height:1;font-weight:300}
+.add form{display:flex;flex-direction:column;gap:8px;width:100%}
+.field{width:100%;padding:11px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.35);color:var(--text);font-size:16px}
+.field:focus{outline:2px solid var(--brass);outline-offset:1px}
+.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:600;background:var(--brass);color:#2b1f15}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.red{background:var(--red);color:#fff}
+.btn.green{background:var(--pine);color:#fff}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:default}
+
+footer{margin-top:40px;text-align:center;font-size:13px;color:var(--muted)}
+footer a{color:var(--muted)}
+
+/* Banner + toast + modal */
+.banner{display:none;margin:10px 0;padding:10px 14px;border-radius:10px;background:rgba(184,53,45,.2);border:1px solid rgba(184,53,45,.5);font-size:14px}
+.banner.show{display:block}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(40px);opacity:0;background:#f5ecd7;color:#2b2218;
+  padding:11px 18px;border-radius:999px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:.25s;z-index:50;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal.show{display:flex}
+.dlg{background:#2b1f15;border:1px solid var(--line);border-radius:16px;padding:22px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.dlg h3{font-family:Oswald;margin:0 0 8px;font-size:22px}
+.dlg p{color:var(--muted);margin:0 0 14px;font-size:15px;line-height:1.45}
+.dlg .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--text)}
+
+/* Admin */
+.panel{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:18px}
+.panel h2{font-family:Oswald;font-weight:600;font-size:20px;margin:0 0 12px;letter-spacing:.02em}
+.panel h2 small{font-family:Inter;font-weight:400;color:var(--muted);font-size:13px;margin-left:6px}
+.adminTop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 0 12px;flex-wrap:wrap}
+.adminTop h1{font-size:30px;margin:0}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.pcard{background:rgba(245,236,215,.06);border:1px solid var(--line);border-radius:12px;padding:12px}
+.pcard .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.pcard .hd b{font-family:Oswald;font-size:19px}
+.prow{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.prow .g{flex:1}
+.prow .c{color:var(--muted);min-width:64px;text-align:right}
+.ptot{display:flex;justify-content:space-between;margin-top:8px;font-weight:600}
+.pay{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.mini{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);font-size:16px;line-height:1;padding:0}
+.mini.del{color:#ff9b93}
+.mini:disabled{opacity:.3}
+.cfg{display:grid;grid-template-columns:52px 1fr 100px auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
+.cfg .field{padding:8px 10px;font-size:15px}
+.cfg .ord{display:flex;gap:4px}
+.log{font-size:14px}
+.log .prow .t{color:var(--muted);font-variant-numeric:tabular-nums;min-width:44px}
+.gate{max-width:380px;margin:12vh auto 0;text-align:center}
+.gate form{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.err{color:#ff9b93;font-size:14px;min-height:18px}
+.hint{color:var(--muted);font-size:13px;margin-top:8px}
+
+.apphead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 0 6px}
+.apphead h1{margin:0;font-size:32px}
+.apphead h1 span{color:var(--brass)}
+.rbtn{border:0;border-radius:12px;padding:11px 16px;font-family:Oswald;font-size:17px;letter-spacing:.04em;background:var(--red);color:#fff;box-shadow:0 4px 14px rgba(184,53,45,.4)}
+.item{position:relative}
+.item.has{border-color:var(--brass);background:linear-gradient(180deg,#5a3f22,#3b2a1c);box-shadow:0 0 0 2px rgba(224,172,74,.5)}
+.badge{position:absolute;top:-8px;right:-6px;background:var(--red);color:#fff;font-family:Oswald;font-size:14px;border-radius:999px;padding:2px 8px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.seg{display:flex;margin-top:10px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;border-radius:8px;padding:8px 6px;background:transparent;color:var(--muted);font-size:13px;font-weight:600}
+.seg button.on{background:var(--brass);color:#2b1f15}
+.cart{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:14px}
+.cart b{color:var(--brass)}
+.cart .muted{color:var(--muted)}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:13px;padding:0}
+.deckel.rmode.sel{box-shadow:0 0 0 4px var(--red),0 16px 32px rgba(0,0,0,.55)}
+.deckel.rmode.sel .flag{background:var(--red);color:#fff}
+.rfoot{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(29,21,16,.97);border-top:1px solid rgba(224,172,74,.4);backdrop-filter:blur(6px);box-shadow:0 -10px 30px rgba(0,0,0,.5)}
+.rin{max-width:1100px;margin:0 auto;padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.rcount{display:flex;align-items:center;gap:18px}
+.rcount>div{text-align:center}
+.rcount b{display:block;font-family:Oswald;font-size:26px;line-height:1}
+.rcount b.lose{color:#ff8a80}.rcount b.win{color:#8fd19e}
+.rcount small{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.rcount .quick{margin-left:auto;display:flex;gap:6px}
+.calc{margin:8px 0;font-size:14px;color:var(--muted)}
+.calc b{color:var(--brass);font-size:16px}
+.racts{display:flex;gap:8px}
+.racts .btn:last-child{flex:1;font-size:16px;padding:12px}
+body.inround .wrap{padding-bottom:230px}
+body.inround .toast{bottom:200px}
+.rtag{display:inline-block;background:var(--red);color:#fff;font-size:11px;border-radius:5px;padding:1px 5px;margin-right:4px;font-weight:600}
+
+/* ===== Kronen-Design: Blau · Gold · Weiß ===== */
+html.kr{background:#eef3fb}
+body.kronen{--text:#0d2350;--muted:#5d6d8f;--line:rgba(13,35,80,.14);--brass:#d4a52c;--ink:#14256b;
+  --kblue:#072a6b;--kblue2:#0c3a8a;--kgold:#e2b33c;--kgold2:#c8921c;--kred:#c8333a;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 15% 0%,rgba(226,179,60,.16),transparent 40%),
+    repeating-linear-gradient(135deg,rgba(11,60,145,.035) 0 2px,transparent 2px 14px),
+    linear-gradient(180deg,#f7f9fe,#e8eefa);
+  background-attachment:fixed}
+body.kronen .apphead{margin:0 -16px;padding:14px 16px;background:linear-gradient(180deg,var(--kblue2),var(--kblue));
+  border-bottom:3px solid var(--kgold);box-shadow:0 4px 14px rgba(11,60,145,.25)}
+body.kronen .apphead h1{color:#fff;display:flex;align-items:center;gap:10px}
+body.kronen .apphead h1 span{color:var(--kgold)}
+body.kronen .apphead .crown{width:30px;height:24px}
+body.kronen .rbtn{background:linear-gradient(180deg,#f0c85a,var(--kgold2));color:var(--kblue);font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+body.kronen .bar{background:rgba(255,255,255,.94);border-bottom:2px solid var(--kgold);box-shadow:0 6px 16px rgba(11,60,145,.08)}
+body.kronen .bar .who{color:var(--muted)}
+body.kronen .bar .who b{color:var(--kblue)}
+body.kronen .item{background:linear-gradient(180deg,var(--kblue2),var(--kblue));border:1px solid #041d4d;color:#fff;box-shadow:0 3px 8px rgba(11,60,145,.25),inset 0 1px 0 rgba(255,255,255,.18)}
+body.kronen .item:hover{background:linear-gradient(180deg,#104399,#08307a)}
+body.kronen .item .pr{color:var(--kgold)}
+body.kronen .item.has{border-color:var(--kgold);box-shadow:0 0 0 3px var(--kgold),0 4px 10px rgba(11,60,145,.3)}
+body.kronen .badge{background:var(--kgold);color:var(--kblue);font-weight:700}
+body.kronen .cart b{color:var(--kblue)}
+body.kronen .deckel{color:#1b2440;background:
+    radial-gradient(circle at 30% 15%,#fff,transparent 65%),
+    repeating-radial-gradient(circle at 50% 50%,rgba(11,60,145,.025) 0 2px,transparent 2px 5px),
+    #fdfcf8;
+  box-shadow:0 8px 20px rgba(11,60,145,.16),inset 0 0 0 1px rgba(11,60,145,.1)}
+body.kronen .deckel::before{border:2px solid rgba(11,60,145,.55);box-shadow:inset 0 0 0 3px #fdfcf8,inset 0 0 0 4px rgba(226,179,60,.7)}
+body.kronen .deckel .brand{color:var(--kgold2)}
+body.kronen .deckel .name{color:var(--kblue)}
+body.kronen .sum{border-top-color:rgba(11,60,145,.2)}
+body.kronen .sum small{color:var(--muted)}
+body.kronen .sum b{color:var(--kblue)}
+body.kronen .empty{color:rgba(11,60,145,.38)}
+body.kronen .deckel.sel{box-shadow:0 0 0 4px var(--kgold),0 14px 28px rgba(11,60,145,.3)}
+body.kronen .flag{background:var(--kgold);color:var(--kblue);font-weight:600}
+body.kronen .deckel.rmode.sel{box-shadow:0 0 0 4px var(--kred),0 14px 28px rgba(11,60,145,.3)}
+body.kronen .deckel.rmode.sel .flag{background:var(--kred);color:#fff}
+body.kronen .stamp{border-color:#1f7a4a;color:#1f7a4a;background:rgba(255,255,255,.7)}
+body.kronen .open{color:var(--kred)}
+body.kronen .add{border-color:rgba(11,60,145,.4);background:rgba(255,255,255,.55);color:var(--kblue)}
+body.kronen .field{background:#fff;border-color:rgba(13,35,80,.22);color:var(--text)}
+body.kronen .field:focus{outline-color:var(--kgold)}
+body.kronen .btn{background:linear-gradient(180deg,#f0c85a,var(--kgold2));color:var(--kblue)}
+body.kronen .btn.ghost{background:#fff;color:var(--kblue);border:1px solid rgba(11,60,145,.3)}
+body.kronen .btn.red{background:var(--kred);color:#fff}
+body.kronen .btn.green{background:#1f7a4a;color:#fff}
+body.kronen footer,body.kronen footer a{color:var(--muted)}
+body.kronen .banner{background:#fdecec;border-color:#f1b5b8;color:#7a1d22}
+body.kronen .toast{background:var(--kblue);color:#fff;border:2px solid var(--kgold)}
+body.kronen .dlg{background:#fff;border-color:rgba(11,60,145,.2)}
+body.kronen .dlg h3{color:var(--kblue)}
+body.kronen .chk{color:var(--text)}
+body.kronen .rfoot{background:linear-gradient(180deg,var(--kblue2),var(--kblue));border-top:3px solid var(--kgold);color:#fff}
+body.kronen .rcount small,body.kronen .calc{color:rgba(255,255,255,.75)}
+body.kronen .rcount b{color:#fff}
+body.kronen .rcount b.lose{color:#ffb3b6}
+body.kronen .rcount b.win{color:#a8e6bd}
+body.kronen .calc b{color:var(--kgold)}
+body.kronen .rfoot .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.45)}
+body.kronen .panel{background:#fff;border-color:rgba(11,60,145,.15);box-shadow:0 4px 14px rgba(11,60,145,.07)}
+body.kronen .panel h2{color:var(--kblue)}
+body.kronen .pcard{background:#f6f8fd;border-color:rgba(11,60,145,.12)}
+body.kronen .pcard .hd b{color:var(--kblue)}
+body.kronen .mini{background:#fff;border-color:rgba(11,60,145,.25);color:var(--kblue)}
+body.kronen .mini.del{color:var(--kred)}
+body.kronen .stat{background:#fff;border-color:rgba(11,60,145,.15);box-shadow:0 3px 10px rgba(11,60,145,.07)}
+body.kronen .stat b{color:var(--kblue)}
+body.kronen .adminTop h1,body.kronen .gate h1{color:var(--kblue)}
+body.kronen .kicker{color:var(--kgold2)}
+body.kronen .err{color:var(--kred)}
+body.kronen .rtag{background:var(--kblue)}
+.themeLink{background:none;border:0;color:inherit;text-decoration:underline;padding:0;font-size:13px}
+@media (max-width:560px){
+  .cfg{grid-template-columns:44px 1fr 78px;}
+  .cfg .ord{grid-column:1/-1;justify-content:flex-end}
+  .grid{grid-template-columns:1fr 1fr;gap:12px}
+  .deckel{padding:14px 12px 12px;min-height:170px;border-radius:20px}
+  .deckel .name{font-size:21px}
+  .ln{font-size:18px}.ln .lbl{min-width:0}
+  .ln .cnt{display:none}
+  .add{min-height:170px}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="dlg" id="dlg"></div></div>
+
+<script>
+const PASSWORD = "Dortmunder Kegelbruder";
+const S = { players:[], entries:[], items:[], selected:null, loaded:{p:false,e:false,c:false}, readonly:false, local:false,
+            draft:null, dirty:false, adding:false, authed:false };
+let db = null;
+try { S.authed = sessionStorage.getItem("kd_auth")==="1"; } catch(e){}
+S.theme="kronen"; try{ S.theme=localStorage.getItem("kd_theme")||"kronen"; }catch(e){}
+
+const fmt = n => (Math.round((n||0)*100)/100).toLocaleString("de-DE",{style:"currency",currency:"EUR"});
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+const isAdmin = () => location.hash === "#backend";
+
+/* ---------- Toast / Modal / Banner ---------- */
+let tT;
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove("show"),2200); }
+function modal(html){ $("#dlg").innerHTML=html; $("#modal").classList.add("show"); }
+function closeModal(){ $("#modal").classList.remove("show"); }
+$("#modal").addEventListener("click",e=>{ if(e.target.id==="modal") closeModal(); });
+let bannerMsg = "";
+function banner(msg){ bannerMsg = msg||""; const b=$("#banner"); if(b){ b.textContent=bannerMsg; b.classList.toggle("show",!!bannerMsg);} }
+
+/* ---------- Derived data ---------- */
+function totalsFor(pid){
+  const list = S.entries.filter(e=>e.pid===pid);
+  const groups = {};
+  for(const e of list){
+    const k = e.item+"|"+e.price;
+    (groups[k] ||= {item:e.item, icon:e.icon||"", price:e.price, n:0, ids:[]});
+    groups[k].n++; groups[k].ids.push(e);
+  }
+  for(const g of Object.values(groups)) g.ids.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const sum = list.reduce((a,e)=>a+(+e.price||0),0);
+  return {groups:Object.values(groups).sort((a,b)=>b.n-a.n), sum, count:list.length};
+}
+const grand = () => S.entries.reduce((a,e)=>a+(+e.price||0),0);
+const paidSum = () => S.players.reduce((a,p)=>a+Math.min(+p.paid||0,totalsFor(p.id).sum),0);
+
+/* ---------- Tally marks (Strichliste) ---------- */
+function tally(n, seed){
+  let r = seed*9301+49297; const rnd=()=>{ r=(r*9301+49297)%233280; return r/233280-.5; };
+  const H=20, parts=[]; let x=2;
+  const line=(x1,y1,x2,y2)=>parts.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#24306c" stroke-width="2.1" stroke-linecap="round"/>`);
+  const shown = Math.min(n,25);
+  for(let i=0;i<shown;i++){
+    const inGroup = i%5;
+    if(inGroup<4){ const xx=x+inGroup*5.5; line(xx+rnd()*1.2,2+rnd()*1.5,xx+rnd()*1.6,H-1+rnd()*1.5); }
+    else { line(x-3+rnd(),H-3+rnd(),x+20+rnd(),4+rnd()); x+=28; }
+  }
+  const rest = shown%5; const w = x + (rest? rest*5.5+4 : 0);
+  return `<svg width="${Math.max(w,4)}" height="${H+2}" viewBox="0 0 ${Math.max(w,4)} ${H+2}">${parts.join("")}</svg>`;
+}
+function hash(s){ let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))|0; return Math.abs(h)%1000; }
+
+/* ---------- Store (shared db, or local fallback) ---------- */
+const store = {
+  async addPlayer(name){
+    const doc = {name, created:Date.now(), paid:0};
+    if(db) await db.collection("players").add(doc);
+    else { S.players.push({id:uid(),...doc}); saveLocal(); }
+  },
+  async addEntry(p, it){
+    const doc = {pid:p.id, item:it.name, icon:it.icon||"", price:+it.price, ts:Date.now()};
+    if(db) await db.collection("entries").add(doc);
+    else { S.entries.push({id:uid(),...doc}); saveLocal(); }
+  },
+  async addEntries(docs){
+    if(db) await inChunks(docs, d=>db.collection("entries").add(d));
+    else { docs.forEach(d=>S.entries.push({id:uid(),...d})); saveLocal(); }
+  },
+  async delEntry(id){
+    if(db) await db.doc("entries/"+id).delete();
+    else { S.entries=S.entries.filter(e=>e.id!==id); saveLocal(); }
+  },
+  async delRound(rid){
+    const ids=S.entries.filter(e=>e.rid===rid).map(e=>e.id);
+    if(db) await inChunks(ids, id=>db.doc("entries/"+id).delete());
+    else { S.entries=S.entries.filter(e=>e.rid!==rid); saveLocal(); }
+  },
+  async delPlayer(pid){
+    const ids = S.entries.filter(e=>e.pid===pid).map(e=>e.id);
+    if(db){ await inChunks(ids, id=>db.doc("entries/"+id).delete()); await db.doc("players/"+pid).delete(); }
+    else { S.entries=S.entries.filter(e=>e.pid!==pid); S.players=S.players.filter(p=>p.id!==pid); saveLocal(); }
+  },
+  async setPaid(pid, paid){
+    if(db) await db.doc("players/"+pid).update({paid});
+    else { const p=S.players.find(p=>p.id===pid); if(p) p.paid=paid; saveLocal(); }
+  },
+  async setItems(items){
+    if(db) await db.doc("config/buttons").set({items});
+    else { S.items=items; saveLocal(); }
+  },
+  async reset(alsoNames){
+    const ids = S.entries.map(e=>e.id);
+    if(db){
+      await inChunks(ids, id=>db.doc("entries/"+id).delete());
+      if(alsoNames) await inChunks(S.players.map(p=>p.id), id=>db.doc("players/"+id).delete());
+      else await inChunks(S.players.filter(p=>p.paid).map(p=>p.id), id=>db.doc("players/"+id).update({paid:0}));
+    } else {
+      S.entries=[]; if(alsoNames) S.players=[]; else S.players.forEach(p=>p.paid=0); saveLocal();
+    }
+  }
+};
+async function inChunks(arr, fn){ for(let i=0;i<arr.length;i+=15) await Promise.all(arr.slice(i,i+15).map(fn)); }
+async function safe(fn, okMsg){
+  if(S.readonly){ toast("Nur Lesezugriff – keine Änderungen möglich"); return false; }
+  try{ await fn(); if(okMsg) toast(okMsg); return true; }
+  catch(e){
+    if(e && (e.code==="invalid_argument"||e.code==="permission-denied")){ banner("Die Datenbank hat die Änderung abgelehnt – bitte die Firestore-Regeln prüfen (siehe Anleitung)."); }
+    else if(e && (e.code==="quota_exceeded"||e.code==="resource-exhausted")) toast("Speicher voll – bitte im Backend alte Einträge löschen");
+    else toast("Hat nicht geklappt – bitte nochmal versuchen");
+    console.warn(e); render(); return false;
+  }
+}
+
+/* local fallback (e.g. preview without shared database) */
+function saveLocal(){ try{ localStorage.setItem("kd_local", JSON.stringify({players:S.players,entries:S.entries,items:S.items})); }catch(e){} render(); }
+function loadLocal(){
+  try{ const d=JSON.parse(localStorage.getItem("kd_local")||"null"); if(d){ S.players=d.players||[]; S.entries=d.entries||[]; S.items=d.items||[]; } }catch(e){}
+  if(!S.items.length) S.items=[
+    {id:uid(),icon:"🍻",name:"Stößchen",price:1.5},{id:uid(),icon:"🍺",name:"Bier",price:3},
+    {id:uid(),icon:"🥃",name:"Schnaps",price:2.5},{id:uid(),icon:"🥤",name:"Softdrink",price:2.8},{id:uid(),icon:"💧",name:"Wasser",price:2.2}];
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const app=$("#app");
+  const active = document.activeElement;
+  const keepId = active && active.id; const keepVal = active && active.value; const keepSel = active && active.selectionStart;
+  document.body.classList.toggle("kronen", S.theme==="kronen"); document.documentElement.classList.toggle("kr", S.theme==="kronen");
+  document.body.classList.toggle("inround", !!S.round && !isAdmin());
+  app.innerHTML = isAdmin() ? (S.authed ? adminHTML() : gateHTML()) : frontHTML();
+  banner(bannerMsg);
+  if(keepId){ const el=document.getElementById(keepId); if(el){ el.focus(); if(keepVal!=null && el.value!==undefined){ el.value=keepVal; try{el.setSelectionRange(keepSel,keepSel);}catch(e){} } } }
+}
+
+function roundCalc(){
+  const R=S.round; if(!R) return null;
+  const N=S.players.length, l=R.sel.size, w=N-l;
+  const lines=S.items.filter(it=>R.cart[it.id]).map(it=>({it,n:R.cart[it.id]}));
+  const cartPrice=lines.reduce((a,x)=>a+x.n*(+x.it.price||0),0);
+  const total = R.mode==="split" ? w*cartPrice : l*cartPrice;
+  return {N,l,w,lines,cartPrice,total,per: l? total/l : 0};
+}
+const nextRoundNo = () => new Set(S.entries.filter(e=>e.rid).map(e=>e.rid)).size+1;
+
+function frontHTML(){
+  const R = S.round;
+  const sel = S.players.find(p=>p.id===S.selected);
+  const loading = !S.local && !(S.loaded.p && S.loaded.e && S.loaded.c);
+  const items = S.items.map(it=>{ const c=R?(R.cart[it.id]||0):0;
+    return `<button class="item ${c?"has":""}" data-act="book" data-id="${esc(it.id)}">${c?`<span class="badge">${c}×</span>`:""}<span class="ic">${esc(it.icon||"🍺")}</span><span class="nm">${esc(it.name)}</span><span class="pr">${fmt(it.price)}</span></button>`;}).join("")
+              || `<span class="sub">Noch keine Getränke-Buttons – im Backend anlegen.</span>`;
+  const cards = S.players.map(p=>{
+    const t = totalsFor(p.id), paid=+p.paid||0, open=Math.max(0,t.sum-paid);
+    const lines = t.groups.map(gr=>`<div class="ln"><span class="lbl">${esc(gr.item)}</span>${tally(gr.n,hash(p.id+gr.item))}<span class="cnt">${gr.n}×</span></div>`).join("")
+                || `<div class="empty">noch nix getrunken</div>`;
+    const stamp = (t.sum>0 && open<0.005) ? `<div class="stamp">BEZAHLT</div>` : "";
+    const openTxt = (paid>0 && open>=0.005) ? `<div class="open">noch offen: ${fmt(open)}</div>` : "";
+    const on = R ? R.sel.has(p.id) : p.id===S.selected;
+    return `<button class="deckel ${on?"sel":""} ${R?"rmode":""}" data-act="select" data-id="${esc(p.id)}" id="d_${esc(p.id)}">
+      <span class="flag">${R?"zahlt Runde":"ausgewählt"}</span>${stamp}
+      <div class="brand">★ Kegeldeckel ★</div>
+      <div class="name">${esc(p.name)}</div>
+      <div class="lines">${lines}</div>
+      <div class="sum"><small>Summe</small><b>${fmt(t.sum)}</b></div>${openTxt}
+    </button>`;
+  }).join("");
+  const add = S.adding
+    ? `<div class="add"><form id="addForm"><input class="field" id="newName" maxlength="30" placeholder="Name eintragen" autocomplete="off"><button class="btn" type="submit">Eintragen</button><button class="btn ghost" type="button" data-act="cancelAdd">Abbrechen</button><div class="hint" style="text-align:center">Namen kann nur das Backend wieder löschen.</div></form></div>`
+    : `<button class="add" data-act="openAdd"><span class="plus">+</span><span>Kegelbruder eintragen</span></button>`;
+
+  let barHead, extra="", foot="";
+  if(R){
+    const c=roundCalc();
+    barHead = `<div class="who"><b>🎳 Runde ${nextRoundNo()}</b> · Verlierer-Deckel antippen, Getränke sammeln</div>`;
+    extra = `<div class="cart">${c.lines.length?`<span>Runde: ${c.lines.map(x=>`${x.n}× ${esc(x.it.name)}`).join(" · ")} = <b>${fmt(c.cartPrice)}</b> pro Deckel</span><button class="link" data-act="rClear">leeren</button>`:`<span class="muted">Getränke oben antippen – mehrfach tippen = mehrere</span>`}</div>`;
+    const calc = !c.lines.length||!c.l ? `Verlierer antippen und Getränke wählen`
+      : R.mode==="split"
+        ? (c.w ? `${c.w} Sieger × ${fmt(c.cartPrice)} = ${fmt(c.total)} → <b>${fmt(c.per)}</b> je Verlierer` : `Keine Sieger übrig – nicht alle auswählen`)
+        : `${c.l} Deckel × ${fmt(c.cartPrice)} = <b>${fmt(c.total)}</b>`;
+    const ok = c.lines.length && c.l && !(R.mode==="split" && !c.w);
+    foot = `<div class="rfoot"><div class="rin">
+      <div class="rcount"><div><b class="lose">${c.l}</b><small>Verlierer</small></div><div><b class="win">${c.w}</b><small>Sieger</small></div><div><b>${c.N}</b><small>Spieler</small></div>
+</div>
+      <div class="calc">${calc}</div>
+      <div class="racts"><button class="btn ghost" data-act="roundCancel">Abbrechen</button><button class="btn" data-act="roundFinish" ${ok?"":"disabled"}>Runde beenden &amp; buchen</button></div>
+    </div></div>`;
+  } else {
+    barHead = `<div class="who">${sel?`Bucht auf: <b>${esc(sel.name)}</b> – jeder Tipp = ein Strich`:"Erst einen Namen antippen ↓"}</div>`;
+  }
+  return `
+  <header class="apphead"><h1>${S.theme==="kronen"?'<svg class="crown" viewBox="0 0 30 24" aria-hidden="true"><path d="M2 20 L4 7 L10 13 L15 3 L20 13 L26 7 L28 20 Z" fill="#e2b33c" stroke="#fff3c4" stroke-width="1"/><rect x="2" y="20" width="26" height="3" rx="1" fill="#e2b33c"/></svg>':""}<span style="color:inherit">Deckel<span>-App</span></span></h1>${R?"":`<button class="rbtn" data-act="roundStart">🎳 Runde</button>`}</header>
+  <div class="banner" id="banner"></div>
+  <div class="bar">
+    ${barHead}
+    <div class="items ${(sel||R)?"":"off"}">${items}</div>
+    ${extra}
+  </div>
+  ${loading?`<div class="sub" style="text-align:center;margin:30px 0">Deckel werden geholt …</div>`:`<div class="grid">${cards}${R?"":add}</div>`}
+  <footer>🎳 Gut Holz! · <a href="#backend">Backend</a> · <button class="themeLink" data-act="theme">${S.theme==="kronen"?"Dunkles Design":"Blau-Gold-Design"}</button></footer>${foot}`;
+}
+
+function gateHTML(){
+  return `<div class="gate">
+    <div class="kicker">Nur für den Wirt</div><h1>Back<span>end</span></h1>
+    <div class="sub">Hier werden Striche korrigiert, Buttons gepflegt und der Abend auf Null gesetzt.</div>
+    <form id="gateForm"><input class="field" id="pw" type="password" placeholder="Passwort" autocomplete="off"><div class="err" id="pwErr"></div>
+    <button class="btn" type="submit">Öffnen</button><a class="btn ghost" href="#" style="text-decoration:none">Zurück zur Übersicht</a></form></div>`;
+}
+
+function adminHTML(){
+  if(!S.dirty) S.draft = S.items.map(i=>({...i}));
+  const people = S.players.map(p=>{
+    const t = totalsFor(p.id), paid=+p.paid||0, open=Math.max(0,t.sum-paid);
+    const rows = t.groups.map(gr=>`<div class="prow"><span class="g">${esc(gr.icon)} ${esc(gr.item)} <span style="color:var(--muted)">à ${fmt(gr.price)}</span></span><span class="c">${gr.n}× · ${fmt(gr.n*gr.price)}</span><button class="mini del" title="Einen Strich entfernen" data-act="minus" data-id="${esc(gr.ids[0].id)}">−</button></div>`).join("")
+               || `<div class="hint">Keine Striche.</div>`;
+    return `<div class="pcard"><div class="hd"><b>${esc(p.name)}</b><button class="btn ghost sm" data-act="delPlayer" data-id="${esc(p.id)}">Name löschen</button></div>
+      ${rows}<div class="ptot"><span>Summe</span><span>${fmt(t.sum)}</span></div>
+      <div class="pay">${t.sum>0&&open<0.005?`✅ bezahlt`:paid>0?`bezahlt ${fmt(paid)} · offen ${fmt(open)}`:`noch nichts bezahlt`}
+        <span style="flex:1"></span>
+        ${t.sum>0&&open>=0.005?`<button class="btn green sm" data-act="paid" data-id="${esc(p.id)}">Als bezahlt markieren</button>`:""}
+        ${paid>0?`<button class="btn ghost sm" data-act="unpaid" data-id="${esc(p.id)}">Zahlung zurücknehmen</button>`:""}
+      </div></div>`;
+  }).join("") || `<div class="hint">Noch keine Namen eingetragen.</div>`;
+
+  const cfg = S.draft.map((it,i)=>`<div class="cfg">
+      <input class="field" id="ic_${i}" data-f="icon" data-i="${i}" value="${esc(it.icon||"")}" maxlength="4" style="text-align:center">
+      <input class="field" id="nm_${i}" data-f="name" data-i="${i}" value="${esc(it.name)}" maxlength="24" placeholder="Name">
+      <input class="field" id="pr_${i}" data-f="price" data-i="${i}" value="${esc(String(it.price).replace(".",","))}" inputmode="decimal" placeholder="Preis">
+      <div class="ord"><button class="mini" data-act="up" data-i="${i}" ${i===0?"disabled":""}>↑</button><button class="mini" data-act="down" data-i="${i}" ${i===S.draft.length-1?"disabled":""}>↓</button><button class="mini del" data-act="rmItem" data-i="${i}">×</button></div>
+    </div>`).join("");
+
+  const recent = [...S.entries].sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,15).map(e=>{
+    const p=S.players.find(p=>p.id===e.pid); const d=new Date(e.ts||0);
+    return `<div class="prow"><span class="t">${d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}</span><span class="g">${e.rno?`<span class="rtag">R${esc(e.rno)}</span>`:""}<b>${esc(p?p.name:"?")}</b> · ${esc(e.icon)} ${esc(e.item)}</span><span class="c">${fmt(e.price)}</span><button class="mini del" title="Buchung löschen" data-act="minus" data-id="${esc(e.id)}">×</button></div>`;
+  }).join("") || `<div class="hint">Noch keine Buchungen.</div>`;
+
+  const rmap={}; for(const e of S.entries) if(e.rid){ (rmap[e.rid] ||= {rid:e.rid,rno:e.rno,ts:e.ts,pids:new Set(),sum:0,n:0,mode:e.mode}); const r=rmap[e.rid]; r.pids.add(e.pid); r.sum+=+e.price||0; r.n++; }
+  const rounds = Object.values(rmap).sort((a,b)=>(b.ts||0)-(a.ts||0)).map(r=>{
+    const names=[...r.pids].map(pid=>S.players.find(p=>p.id===pid)?.name||"?").join(", ");
+    return `<div class="prow"><span class="t"><span class="rtag">R${esc(r.rno)}</span></span><span class="g">${esc(names)}<br><span style="color:var(--muted);font-size:12px">${r.pids.size} Deckel · ${r.n} Striche · ${r.mode==="split"?"aufgeteilt":"jeder"} · ${new Date(r.ts||0).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}</span></span><span class="c">${fmt(r.sum)}</span><button class="btn ghost sm" data-act="delRound" data-id="${esc(r.rid)}">Stornieren</button></div>`;
+  }).join("") || `<div class="hint">Noch keine Runden gebucht.</div>`;
+  return `
+  <div class="adminTop"><div><div class="kicker">Weihnachtskegeln</div><h1>Back<span style="color:var(--brass)">end</span></h1></div>
+    <div style="display:flex;gap:8px"><a class="btn ghost" href="#" style="text-decoration:none">← Übersicht</a><button class="btn ghost" data-act="logout">Sperren</button></div></div>
+  <div class="banner" id="banner"></div>
+  <div class="stats" style="justify-content:flex-start;margin:0 0 18px">
+    <div class="stat"><small>Gesamt</small><b>${fmt(grand())}</b></div>
+    <div class="stat"><small>Bezahlt</small><b>${fmt(paidSum())}</b></div>
+    <div class="stat"><small>Offen</small><b>${fmt(Math.max(0,grand()-paidSum()))}</b></div>
+  </div>
+
+  <div class="panel"><h2>Deckel korrigieren <small>${fmt(grand())} gesamt · ${S.entries.length} Striche</small></h2><div class="pgrid">${people}</div></div>
+
+  <div class="panel log"><h2>Runden <small>Tischseite gegen Tischseite</small></h2>${rounds}</div>
+
+  <div class="panel log"><h2>Letzte Buchungen <small>Vertipper schnell rückgängig machen</small></h2>${recent}</div>
+
+  <div class="panel"><h2>Getränke-Buttons <small>Symbol · Name · Preis · Reihenfolge</small></h2>
+    ${cfg || `<div class="hint">Keine Buttons.</div>`}
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn ghost" data-act="addItem">+ Button hinzufügen</button><span style="flex:1"></span>
+      ${S.dirty?`<button class="btn ghost" data-act="discard">Verwerfen</button>`:""}
+      <button class="btn" data-act="saveItems" ${S.dirty?"":"disabled"}>Änderungen speichern</button>
+    </div>
+    <div class="hint">Preisänderungen gelten für neue Striche – bereits gebuchte behalten ihren Preis.</div>
+  </div>
+
+  <div class="panel" style="border-color:rgba(184,53,45,.5)"><h2>Alles auf Null</h2>
+    <div class="hint" style="margin:0 0 12px">Löscht alle Striche und Zahlungen. Auf Wunsch auch alle Namen.</div>
+    <button class="btn red" data-act="resetAsk">Alles auf Null setzen …</button></div>`;
+}
+
+/* ---------- Events ---------- */
+document.addEventListener("click", async e=>{
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const act=b.dataset.act, id=b.dataset.id, i=+b.dataset.i;
+  if(act==="theme"){ S.theme=S.theme==="kronen"?"dark":"kronen"; try{localStorage.setItem("kd_theme",S.theme);}catch(e){} render(); return; }
+  if(act==="select"){
+    if(S.round){ S.round.sel.has(id)?S.round.sel.delete(id):S.round.sel.add(id); }
+    else S.selected = S.selected===id?null:id;
+    render();
+  }
+  else if(act==="book" && S.round){ S.round.cart[id]=(S.round.cart[id]||0)+1; render(); }
+  else if(act==="roundStart"){ S.round={sel:new Set(), cart:{}, mode:"each"}; S.adding=false; render(); window.scrollTo({top:0,behavior:"smooth"}); }
+  else if(act==="roundCancel"){ S.round=null; render(); }
+  else if(act==="rMode"){ S.round.mode=b.dataset.m; render(); }
+  else if(act==="rClear"){ S.round.cart={}; render(); }
+  else if(act==="rAll"){ S.players.forEach(p=>S.round.sel.add(p.id)); render(); }
+  else if(act==="rNone"){ S.round.sel.clear(); render(); }
+  else if(act==="roundFinish"){
+    const R=S.round, c=roundCalc(); if(!c||!c.lines.length||!c.l) return;
+    const rid=uid(), rno=nextRoundNo(), ts=Date.now(), docs=[];
+    for(const pid of R.sel){ if(!S.players.some(p=>p.id===pid)) continue;
+      for(const {it,n} of c.lines){
+        if(R.mode==="split"){
+          const share=Math.round(c.w*n*(+it.price||0)/c.l*100)/100;
+          docs.push({pid,item:it.name+" (Runde)",icon:it.icon||"",price:share,ts,rid,rno,mode:"split"});
+        } else for(let k=0;k<n;k++) docs.push({pid,item:it.name,icon:it.icon||"",price:+it.price,ts,rid,rno,mode:"each"});
+      }
+    }
+    const ok = await safe(()=>store.addEntries(docs), `🎳 Runde ${rno} gebucht · ${c.l} Deckel · ${fmt(c.total)}`);
+    if(ok){ S.round=null; render(); }
+  }
+  else if(act==="delRound"){
+    const es=S.entries.filter(e=>e.rid===id); if(!es.length) return;
+    modal(`<h3>Runde ${esc(es[0].rno)} stornieren?</h3><p>Alle ${es.length} Striche dieser Runde (${fmt(es.reduce((a,e)=>a+(+e.price||0),0))}) werden von den Deckeln genommen.</p><div class="row"><button class="btn ghost" data-act="close">Abbrechen</button><button class="btn red" data-act="delRoundGo" data-id="${esc(id)}">Stornieren</button></div>`);
+  }
+  else if(act==="delRoundGo"){ closeModal(); await safe(()=>store.delRound(id),"Runde storniert"); }
+  else if(act==="book"){
+    const p=S.players.find(p=>p.id===S.selected);
+    if(!p){ toast("Erst einen Namen antippen"); return; }
+    const it=S.items.find(x=>x.id===id); if(!it) return;
+    const ok = await safe(()=>store.addEntry(p,it), `${it.icon||"🍺"} ${it.name} für ${p.name} · ${fmt(it.price)}`);
+    if(ok){ const d=document.getElementById("d_"+p.id); if(d){ d.classList.remove("bump"); void d.offsetWidth; d.classList.add("bump"); } }
+  }
+  else if(act==="openAdd"){ S.adding=true; render(); setTimeout(()=>$("#newName")?.focus(),0); }
+  else if(act==="cancelAdd"){ S.adding=false; render(); }
+  else if(act==="logout"){ S.authed=false; try{sessionStorage.removeItem("kd_auth");}catch(e){} render(); }
+  else if(act==="minus"){ await safe(()=>store.delEntry(id),"Strich entfernt"); }
+  else if(act==="delPlayer"){
+    const p=S.players.find(p=>p.id===id); if(!p) return;
+    modal(`<h3>${esc(p.name)} löschen?</h3><p>Der Name und alle seine Striche (${fmt(totalsFor(id).sum)}) werden entfernt.</p><div class="row"><button class="btn ghost" data-act="close">Abbrechen</button><button class="btn red" data-act="delPlayerGo" data-id="${esc(id)}">Löschen</button></div>`);
+  }
+  else if(act==="delPlayerGo"){ closeModal(); if(S.selected===id) S.selected=null; await safe(()=>store.delPlayer(id),"Name gelöscht"); }
+  else if(act==="paid"){ await safe(()=>store.setPaid(id, Math.round(totalsFor(id).sum*100)/100),"Als bezahlt markiert"); }
+  else if(act==="unpaid"){ await safe(()=>store.setPaid(id,0),"Zahlung zurückgenommen"); }
+  else if(act==="close"){ closeModal(); }
+  else if(act==="up"||act==="down"){ const j=act==="up"?i-1:i+1; [S.draft[i],S.draft[j]]=[S.draft[j],S.draft[i]]; S.dirty=true; render(); }
+  else if(act==="rmItem"){ S.draft.splice(i,1); S.dirty=true; render(); }
+  else if(act==="addItem"){ S.draft.push({id:uid(),icon:"🍺",name:"",price:0}); S.dirty=true; render(); setTimeout(()=>document.getElementById("nm_"+(S.draft.length-1))?.focus(),0); }
+  else if(act==="discard"){ S.dirty=false; render(); }
+  else if(act==="saveItems"){
+    const items=S.draft.map(it=>({id:it.id, icon:String(it.icon||"").trim(), name:String(it.name||"").trim(), price:Math.max(0,Math.round((parseFloat(String(it.price).replace(",","."))||0)*100)/100)}));
+    if(items.some(it=>!it.name)){ toast("Jeder Button braucht einen Namen"); return; }
+    const ok = await safe(()=>store.setItems(items),"Buttons gespeichert");
+    if(ok){ S.dirty=false; if(!db) S.items=items; render(); }
+  }
+  else if(act==="resetAsk"){
+    modal(`<h3>Wirklich alles löschen?</h3><p>Alle ${S.entries.length} Striche (${fmt(grand())}) und alle Zahlungsvermerke werden unwiderruflich gelöscht.</p>
+      <label class="chk"><input type="checkbox" id="alsoNames"> Auch alle Namen löschen</label>
+      <div class="row"><button class="btn ghost" data-act="close">Abbrechen</button><button class="btn red" data-act="resetGo">Ja, alles auf Null</button></div>`);
+  }
+  else if(act==="resetGo"){ const also=$("#alsoNames")?.checked; closeModal(); S.selected=also?null:S.selected; await safe(()=>store.reset(also),"Alles auf Null gesetzt 🎳"); }
+});
+
+document.addEventListener("input", e=>{
+  const el=e.target; if(el.dataset.f==null) return;
+  S.draft[+el.dataset.i][el.dataset.f]=el.value;
+  if(!S.dirty){ S.dirty=true; render(); }
+});
+
+document.addEventListener("submit", async e=>{
+  e.preventDefault();
+  if(e.target.id==="addForm"){
+    const name=$("#newName").value.trim().replace(/\s+/g," ");
+    if(!name) return;
+    if(S.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){ toast(`${name} steht schon drauf`); return; }
+    const ok = await safe(()=>store.addPlayer(name), `${name} ist dabei 🎳`);
+    if(ok){ S.adding=false; render(); }
+  }
+  if(e.target.id==="gateForm"){
+    if($("#pw").value.trim()===PASSWORD){ S.authed=true; try{sessionStorage.setItem("kd_auth","1");}catch(e){} render(); }
+    else { $("#pwErr").textContent="Falsches Passwort"; }
+  }
+});
+window.addEventListener("hashchange", ()=>{ window.scrollTo(0,0); render(); });
+
+/* ---------- Firebase-Anbindung ---------- */
+const FB_VERSION = "10.12.2";
+const DEFAULT_ITEMS = [
+  {id:"stoesschen",icon:"🍻",name:"Stößchen",price:1.5},{id:"bier",icon:"🍺",name:"Bier",price:3},
+  {id:"schnaps",icon:"🥃",name:"Schnaps",price:2.5},{id:"softdrink",icon:"🥤",name:"Softdrink",price:2.8},
+  {id:"wasser",icon:"💧",name:"Wasser",price:2.2}];
+
+/* Kleiner Adapter: stellt Firestore mit derselben Schnittstelle bereit, die die App intern nutzt. */
+async function connectFirebase(cfg){
+  const appMod = await import(`https://www.gstatic.com/firebasejs/${FB_VERSION}/firebase-app.js`);
+  const fs = await import(`https://www.gstatic.com/firebasejs/${FB_VERSION}/firebase-firestore.js`);
+  const app = appMod.initializeApp(cfg);
+  const fdb = fs.getFirestore(app);
+  const wrap = s => ({ id:s.id, exists:s.exists(), data:()=>s.data(), metadata:s.metadata });
+  const opts = { includeMetadataChanges:true };
+  const docRef = p => {
+    const r = fs.doc(fdb, p);
+    return {
+      set:d=>fs.setDoc(r,d), update:d=>fs.updateDoc(r,d), delete:()=>fs.deleteDoc(r),
+      onSnapshot:(next,err)=>fs.onSnapshot(r, opts, s=>next(wrap(s)), err)
+    };
+  };
+  return {
+    doc: docRef,
+    collection: p => {
+      const c = fs.collection(fdb, p);
+      return {
+        add:d=>fs.addDoc(c,d),
+        onSnapshot:(next,err)=>fs.onSnapshot(c, opts, s=>next({docs:s.docs.map(wrap), metadata:s.metadata}), err)
+      };
+    }
+  };
+}
+
+/* ---------- Boot ---------- */
+render();
+(async ()=>{
+  const cfg = window.FIREBASE_CONFIG;
+  const configured = cfg && cfg.apiKey && !String(cfg.apiKey).startsWith("HIER");
+  try{ db = configured ? await connectFirebase(cfg) : null; }catch(e){ console.warn(e); db=null; }
+  if(!db){
+    S.local=true; loadLocal();
+    banner(configured ? "Firebase nicht erreichbar – diese Ansicht speichert nur auf diesem Gerät."
+                      : "Firebase ist noch nicht eingerichtet (firebase-config.js) – Testmodus, speichert nur auf diesem Gerät.");
+    render(); return;
+  }
+  const timer=setTimeout(()=>{ if(!(S.loaded.p&&S.loaded.e&&S.loaded.c)){ banner("Die Deckel sind gerade nicht erreichbar – Anzeige ist evtl. nicht aktuell."); render(); } },10000);
+  const mark=(k,snap)=>{ if(!snap.metadata.fromCache && !S.loaded[k]){ S.loaded[k]=true; if(S.loaded.p&&S.loaded.e&&S.loaded.c){ clearTimeout(timer); if(bannerMsg.startsWith("Die Deckel")) banner(""); } } };
+  const onErr=k=>err=>{ S.loaded[k]=true; clearTimeout(timer); console.warn(err);
+    banner(err&&err.code==="permission-denied" ? "Kein Zugriff auf die Datenbank – bitte die Firestore-Regeln prüfen (siehe Anleitung)." : "Verbindung zur Datenbank verloren – bitte Seite neu laden."); render(); };
+  let seeded=false;
+  db.collection("players").onSnapshot(s=>{
+    S.players=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.created||0)-(b.created||0));
+    if(S.selected && !S.players.some(p=>p.id===S.selected)) S.selected=null;
+    mark("p",s); render();
+  }, onErr("p"));
+  db.collection("entries").onSnapshot(s=>{ S.entries=s.docs.map(d=>({id:d.id,...d.data()})); mark("e",s); render(); }, onErr("e"));
+  db.doc("config/buttons").onSnapshot(s=>{
+    const d=s.exists?s.data():null; S.items=(d&&Array.isArray(d.items))?d.items:[];
+    /* Beim allerersten Start: Standard-Getränke anlegen */
+    if(!s.exists && !s.metadata.fromCache && !seeded){ seeded=true; db.doc("config/buttons").set({items:DEFAULT_ITEMS}).catch(console.warn); }
+    mark("c",s); render();
+  }, onErr("c"));
+})();
+</script>
+</body>
+</html>

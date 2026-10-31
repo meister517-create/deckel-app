@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// Firestore-Regeln für die Deckel-App
+// Jeder mit dem Link darf lesen und schreiben (wie auf einem echten Deckel am Tisch).
+// Die Regeln prüfen aber, dass nur sinnvolle Daten gespeichert werden,
+// und alles außerhalb der drei Sammlungen der App ist gesperrt.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Teilnehmer (Deckel)
+    match /players/{id} {
+      allow read, delete: if true;
+      allow create, update: if request.resource.data.name is string
+                            && request.resource.data.name.size() > 0
+                            && request.resource.data.name.size() <= 30
+                            && request.resource.data.paid is number
+                            && request.resource.data.paid >= 0;
+    }
+
+    // Einzelne Striche
+    match /entries/{id} {
+      allow read, delete: if true;
+      allow create: if request.resource.data.pid is string
+                    && request.resource.data.item is string
+                    && request.resource.data.item.size() <= 60
+                    && request.resource.data.price is number
+                    && request.resource.data.price >= 0
+                    && request.resource.data.price <= 500;
+      allow update: if false;
+    }
+
+    // Getränke-Buttons
+    match /config/buttons {
+      allow read: if true;
+      allow write: if request.resource.data.items is list
+                   && request.resource.data.items.size() <= 30;
+    }
+
+    // Alles andere ist gesperrt
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
